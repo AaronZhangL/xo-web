@@ -1,23 +1,27 @@
-import escapeRegExp from 'lodash/escapeRegExp'
-import every from 'lodash/every'
-import forEach from 'lodash/forEach'
 import getStream from 'get-stream'
 import humanFormat from 'human-format'
-import isArray from 'lodash/isArray'
-import isEmpty from 'lodash/isEmpty'
-import isFunction from 'lodash/isFunction'
-import isPlainObject from 'lodash/isPlainObject'
-import isString from 'lodash/isString'
-import join from 'lodash/join'
-import keys from 'lodash/keys'
-import map from 'lodash/map'
-import mapValues from 'lodash/mapValues'
 import React from 'react'
 import ReadableStream from 'readable-stream'
-import replace from 'lodash/replace'
-import sample from 'lodash/sample'
-import startsWith from 'lodash/startsWith'
 import { connect } from 'react-redux'
+import {
+  escapeRegExp,
+  every,
+  flatten,
+  forEach,
+  identity,
+  isArray,
+  isEmpty,
+  isFunction,
+  isPlainObject,
+  isString,
+  join,
+  keys,
+  map,
+  mapValues,
+  replace,
+  sample,
+  startsWith
+} from 'lodash'
 
 import _ from './intl'
 import * as actions from './store/actions'
@@ -25,6 +29,14 @@ import BaseComponent from './base-component'
 import invoke from './invoke'
 import store from './store'
 import { getObject } from './selectors'
+import {
+  createAnd,
+  createNot,
+  createOr,
+  createProperty,
+  createString,
+  toString
+} from './complex-matcher'
 
 export const EMPTY_ARRAY = Object.freeze([ ])
 export const EMPTY_OBJECT = Object.freeze({ })
@@ -565,3 +577,69 @@ export const generateReadableRandomString = (() => {
     return result.join('')
   }
 })()
+
+// ===================================================================
+
+// Smart backup
+export const destructPattern = (pattern, valueTransform = identity) => pattern && ({
+  not: !!pattern.__not,
+  values: valueTransform((pattern.__not || pattern).__or)
+})
+
+export const constructPattern = ({ not, values } = EMPTY_OBJECT, valueTransform = identity) => {
+  if (values == null || !values.length) {
+    return
+  }
+
+  const pattern = { __or: valueTransform(values) }
+  return not
+    ? { __not: pattern }
+    : pattern
+}
+
+const parsePattern = pattern => {
+  const patternValues = map(pattern.values, value => {
+    return isArray(value)
+      ? createString(value[0])
+      : createString(value)
+  })
+
+  return pattern.not
+    ? createNot(createOr(patternValues))
+    : createOr(patternValues)
+}
+
+export const constructFilter = pattern => {
+  const powerState = pattern.power_state
+  const pool = destructPattern(pattern.$pool)
+  const tags = destructPattern(pattern.tags)
+
+  let filter = []
+
+  if (powerState !== undefined) {
+    filter.push(
+      createProperty(
+        'power_state',
+        powerState === 'Running' ? createString('running') : createNot(createString('running'))
+      )
+    )
+  }
+  if (pool !== undefined) {
+    filter.push(
+      createProperty(
+        '$pool',
+        parsePattern(pool)
+      )
+    )
+  }
+  if (tags !== undefined) {
+    filter.push(
+      createProperty(
+        'tags',
+        parsePattern(tags)
+      )
+    )
+  }
+
+  return createAnd(filter)::toString()
+}

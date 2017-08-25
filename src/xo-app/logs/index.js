@@ -1,22 +1,26 @@
+import React, { Component } from 'react'
+import { FormattedDate } from 'react-intl'
+import {
+  forEach,
+  get,
+  includes,
+  isArray,
+  map,
+  orderBy
+} from 'lodash'
+
 import _, { FormattedDuration } from 'intl'
 import ActionButton from 'action-button'
 import ActionRowButton from 'action-row-button'
 import ButtonGroup from 'button-group'
 import classnames from 'classnames'
-import forEach from 'lodash/forEach'
-import get from 'lodash/get'
 import Icon from 'icon'
-import includes from 'lodash/includes'
-import map from 'lodash/map'
-import orderBy from 'lodash/orderBy'
 import propTypes from 'prop-types-decorator'
-import React, { Component } from 'react'
 import renderXoItem from 'render-xo-item'
 import SortedTable from 'sorted-table'
 import Tooltip from 'tooltip'
-import { alert, confirm } from 'modal'
 import { createGetObject } from 'selectors'
-import { FormattedDate } from 'react-intl'
+import { alert, confirm } from 'modal'
 import {
   connectStore,
   formatSize,
@@ -118,8 +122,11 @@ const Log = props => <ul className='list-group'>
         <span className='text-danger'>
           <Icon icon='error' />
           {' '}
-          {call.error.message
-            ? <strong>{call.error.message}</strong>
+          {call.error.message !== undefined
+            ? <strong>{isArray(call.error.message)
+              ? map(call.error.message, (message, key) => <span key={key}>{message}<br /></span>)
+              : call.error.message
+            }</strong>
             : JSON.stringify(call.error)
           }
         </span>}
