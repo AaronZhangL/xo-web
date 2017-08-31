@@ -118,8 +118,8 @@ const Log = props => <ul className='list-group'>
         <span className='text-danger'>
           <Icon icon='error' />
           {' '}
-          {call.error.message !== undefined
-            ? <strong>call.error.message</strong>
+          {call.error.message
+            ? <strong>{call.error.message}</strong>
             : JSON.stringify(call.error)
           }
         </span>}
