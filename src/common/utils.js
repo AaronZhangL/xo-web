@@ -6,7 +6,6 @@ import { connect } from 'react-redux'
 import {
   escapeRegExp,
   every,
-  flatten,
   forEach,
   identity,
   isArray,
